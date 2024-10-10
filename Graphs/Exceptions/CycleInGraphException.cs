@@ -1,9 +1,7 @@
 ﻿namespace Graphs.Exceptions;
 
-public class CycleInGraphException : Exception
+public class CycleInGraphException(IEnumerable<Type> visitedNodesStack) : Exception(Format(visitedNodesStack))
 {
-    public CycleInGraphException(IEnumerable<Type> visitedNodesStack) : base(Format(visitedNodesStack)) { }
-
     public static string Format(IEnumerable<Type> visitedNodesStack)
     {
         var stackStr = string.Join("\n↓\n", visitedNodesStack);

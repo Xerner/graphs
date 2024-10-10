@@ -1,29 +1,31 @@
-﻿namespace Graphs.Models;
+﻿using Graphs.Interfaces;
 
-/// <inheritdoc cref="InfoNode{T}"/>
-internal class ExternalInfoNode : InfoNode
-{
-    public override object? ObjectValue
-    {
-        get => objectValue;
-        set => objectValue = value;
-    }
-    public override object? CalculateObject()
-    {
-        return ObjectValue;
-    }
-}
+namespace Graphs.Models;
 
-/// <inheritdoc cref="InfoNode{T}"/>
-internal class ExternalInfoNode<T> : InfoNode<T>
+/// <inheritdoc cref="IInfoNode{T}"/>
+internal class ExternalInfoNode<T> : IInfoNode<T>
 {
-    public override T? Value
-    {
-        get => value;
-        set => this.value = value;
-    }
-    public override T? Calculate()
+    public T? Value { get; set; }
+    public bool HasResolved { get; private set; } = true;
+
+    public T? Calculate()
     {
         return Value;
     }
+
+    public Task<T?> CalculateAsync()
+    {
+        return Task.FromResult(Value);
+    }
+
+    public T? Resolve()
+    {
+        return Calculate();
+    }
+
+    public Task<T?> ResolveAsync()
+    {
+        return CalculateAsync();
+    }
 }
+

@@ -1,9 +1,10 @@
-﻿using Graphs.Models;
-using System.Text;
+﻿using System.Text;
+using Graphs.Interfaces;
+using Graphs.Models;
 
 namespace Graphs.Exceptions;
 
-internal class MissingExternalGraphDependencyException<TEntryNode> : Exception where TEntryNode : InfoNode
+internal class MissingExternalGraphDependencyException<TNode, TNodeValue> : Exception where TNode : IInfoNode<TNodeValue>
 {
     public IEnumerable<GraphNode> MissingTypes;
 
@@ -14,7 +15,7 @@ internal class MissingExternalGraphDependencyException<TEntryNode> : Exception w
 
     public static string Format(IEnumerable<GraphNode> missingTypes)
     {
-        var entryNodeType = typeof(TEntryNode);
+        var entryNodeType = typeof(TNode);
         var missingTypesDict = new Dictionary<Type, List<GraphNode>>();
         foreach (var missingType in missingTypes)
         {

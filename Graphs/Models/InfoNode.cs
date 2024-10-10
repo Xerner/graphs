@@ -3,107 +3,55 @@ using Graphs.Interfaces;
 
 namespace Graphs.Models;
 
-// TODO: can this just be refactored into InfoNode<T> and all instances of it be replaced with InfoNode<object>?
-//       The struggle lies to get stuff like CalculationGraph.Nodes to compile. It cannot convert InfoNode<object> to InfoNode<T>.
 /// <summary>
-/// A node containing info produced from a <see cref="CalculationGraph{T, V}"/>
+/// A graph node containing info intended for use with a <see cref="CalculationTree{T, K}"/>.
+/// It's constructor parameters are assumed to be its dependencies. It is not aware of nodes that depend on it.
 /// </summary>
-public abstract class InfoNode
+public abstract class InfoNode<TNodeValue> : IInfoNode<TNodeValue>
 {
-    internal bool HasResolved = false;
     public IGraph? Graph { get; internal set; } = default;
-    protected object? objectValue = null;
-    public virtual object? ObjectValue
-    {
-        get => HasResolved ? objectValue : throw new NodeHasNotResolvedException(this);
-        set => objectValue = value;
-    }
-    protected HashSet<string> Errors = new();
-    public IReadOnlySet<string> GetErrors() => Errors;
-    public void ResetErrors() => Errors.Clear();
-    public object? ResolveObject()
-    {
-        ResetErrors();
-        ObjectValue = CalculateObject();
-        HasResolved = true;
-        return ObjectValue;
-    }
-    public async Task<object?> ResolveObjectAsync()
-    {
-        ResetErrors();
-        ObjectValue = await CalculateObjectAsync();
-        HasResolved = true;
-        return ObjectValue;
-    }
-    public abstract object? CalculateObject();
-    public virtual Task<object?> CalculateObjectAsync() => Task.FromResult(CalculateObject());
-}
 
-/// <inheritdoc cref="InfoNode"/>
-public abstract class InfoNode<T> : InfoNode
-{
-    public override object? ObjectValue { get => Value; set => Value = (T?)value; }
-    // TODO: re-type this class so that 'value' can return null to signify it has not been resolved yet
-    protected T? value = default;
-    public virtual T? Value
+    protected TNodeValue? value = default;
+
+    public bool HasResolved { get; set; } = false;
+
+    public virtual TNodeValue? Value
     {
-        get => HasResolved ? value : throw new NodeHasNotResolvedException(this);
-        set => this.value = value;
+        get => HasResolved ? value : throw new NodeHasNotResolvedException<TNodeValue>(this);
+        set => this.@value = value;
     }
-    public override object? CalculateObject() => Calculate();
-    public override async Task<object?> CalculateObjectAsync() => await CalculateAsync();
-    public InfoNode<T> Resolve()
+
+    protected HashSet<string> Errors = [];
+
+    public IReadOnlySet<string> GetErrors() => Errors;
+
+    public void ResetErrors() => Errors.Clear();
+
+    public TNodeValue? Resolve()
     {
         ResetErrors();
         Value = Calculate();
         HasResolved = true;
-        return this;
+        return Value;
     }
-    public async Task<InfoNode<T>> ResolveAsync()
+
+    public async Task<TNodeValue?> ResolveAsync()
     {
         ResetErrors();
         Value = await CalculateAsync();
         HasResolved = true;
-        return this;
+        return Value;
     }
-    public abstract T? Calculate();
-    public virtual Task<T?> CalculateAsync() => Task.FromResult(Calculate());
-    public static K Resolve<K>(params object[] dependencies) where K : InfoNode<T>
+
+    public abstract TNodeValue? Calculate();
+
+    public virtual Task<TNodeValue?> CalculateAsync() => Task.FromResult(Calculate());
+
+    // TODO: re-type this class so that 'value' can return null to signify it has not been resolved yet
+    public static K Resolve<K>(params object[] dependencies) where K : InfoNode<TNodeValue>
     {
-        var graph = new CalculationTree<K, T>();
+        var graph = new CalculationTree<K, TNodeValue>();
         graph.Resolve(dependencies);
-        return graph.Root;
-    }
-}
-
-/// <inheritdoc cref="InfoNode"/>
-public abstract class InfoNodeAsync : InfoNode
-{
-    public override object? CalculateObject()
-    {
-        var task = CalculateObjectAsync();
-        task.Wait();
-        return task.Result;
-    }
-    public override abstract Task<object?> CalculateObjectAsync();
-}
-
-/// <inheritdoc cref="InfoNode"/>
-public abstract class InfoNodeAsync<T> : InfoNode<T>
-{
-    public override T? Calculate()
-    {
-        var task = CalculateAsync();
-        task.Wait();
-        return task.Result;
-    }
-
-    public override abstract Task<T?> CalculateAsync();
-
-    new public static async Task<K> Resolve<K>(params object[] dependencies) where K : InfoNodeAsync<T>
-    {
-        var graph = new CalculationTree<K, T>();
-        await graph.ResolveAsync(dependencies);
         return graph.Root;
     }
 }
