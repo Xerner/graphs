@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\kenne\\Projects\\dependency-container\\ConsoleTesting\\ConsoleTesting.csproj": {}
+    "C:\\Users\\kenne\\Projects\\graphs\\ConsoleTesting\\ConsoleTesting.csproj": {}
   },
   "projects": {
-    "C:\\Users\\kenne\\Projects\\dependency-container\\ConsoleTesting\\ConsoleTesting.csproj": {
+    "C:\\Users\\kenne\\Projects\\graphs\\ConsoleTesting\\ConsoleTesting.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\kenne\\Projects\\dependency-container\\ConsoleTesting\\ConsoleTesting.csproj",
+        "projectUniqueName": "C:\\Users\\kenne\\Projects\\graphs\\ConsoleTesting\\ConsoleTesting.csproj",
         "projectName": "ConsoleTesting",
-        "projectPath": "C:\\Users\\kenne\\Projects\\dependency-container\\ConsoleTesting\\ConsoleTesting.csproj",
+        "projectPath": "C:\\Users\\kenne\\Projects\\graphs\\ConsoleTesting\\ConsoleTesting.csproj",
         "packagesPath": "C:\\Users\\kenne\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\kenne\\Projects\\dependency-container\\ConsoleTesting\\obj\\",
+        "outputPath": "C:\\Users\\kenne\\Projects\\graphs\\ConsoleTesting\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\kenne\\AppData\\Roaming\\NuGet\\NuGet.Config",

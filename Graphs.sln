@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.10.35013.160
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Graphs", "DependencyContainer\Graphs.csproj", "{9082427C-D0E0-44B9-989A-110994B265CE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Graphs", "Graphs\Graphs.csproj", "{9082427C-D0E0-44B9-989A-110994B265CE}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "ConsoleTesting", "ConsoleTesting\ConsoleTesting.csproj", "{85732282-B5FF-426E-B9B9-B38220E642D8}"
 EndProject
