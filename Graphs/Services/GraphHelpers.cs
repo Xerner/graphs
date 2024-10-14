@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using Graphs.Exceptions;
 using Graphs.Models;
 
 namespace Graphs.Services;
@@ -72,13 +73,13 @@ public class GraphHelpers
     }
 
     /// <inheritdoc cref="GetGraphNodes(Type, Type, GraphCycleTracker{Type}, Dictionary{Type, GraphNode}?)"/>
-    internal GraphNode GetGraphNodes<TExpectedInfoNodeType, TOriginNodeType>() where TExpectedInfoNodeType : InfoNode where TOriginNodeType : TExpectedInfoNodeType
+    internal GraphNode GetGraphNodes<TExpectedInfoNodeType, TOriginNodeType>() where TExpectedInfoNodeType : IInfoNode where TOriginNodeType : TExpectedInfoNodeType
     {
         return GetGraphNodes(typeof(TExpectedInfoNodeType), typeof(TOriginNodeType), new());
     }
 
     /// <inheritdoc cref="GetGraphNodes(Type, Type, GraphCycleTracker{Type}, Dictionary{Type, GraphNode}?)"/>
-    internal GraphNode GetGraphNodes<TOriginNodeType>(Type expectedInfoNodeType) where TOriginNodeType : InfoNode
+    internal GraphNode GetGraphNodes<TOriginNodeType>(Type expectedInfoNodeType) where TOriginNodeType : IInfoNode
     {
         return GetGraphNodes(expectedInfoNodeType, typeof(TOriginNodeType), new());
     }
@@ -90,7 +91,7 @@ public class GraphHelpers
     }
 
     /// <summary>
-    /// Turns nodeType into a <see cref="GraphNode"/> and then does the same for all of its 
+    /// Turns <paramref name="nodeType"/> into a <see cref="GraphNode"/> and then does the same for all of its 
     /// constructors parameters recursively. The constructor parameters are what are considered 
     /// dependencies for nodeType. Constructor parameters that don't inherit from expectedGraphNodeType
     /// are assumed to be "external dependencies" that are not created inside the graph
@@ -99,29 +100,30 @@ public class GraphHelpers
     /// <param name="nodeType">The type to turn into a <see cref="GraphNode"/></param>
     /// <returns>The graphs origin nodeWithNoDeps</returns>
     /// <exception cref="CycleInGraphException"></exception>
-    private GraphNode GetGraphNodes(Type expectedGraphNodeType, Type nodeType, GraphCycleTracker<Type> cycleTracker, Dictionary<Type, GraphNode>? createdNodes = null)
+    private GraphNode GetGraphNodes<TNode, TExpectedType>(GraphCycleTracker<Type> cycleTracker, Dictionary<Type, GraphNode>? createdNodes = null)
     {
         if (createdNodes is null)
         {
             createdNodes = new();
         }
+        var nodeType = typeof(TNode);
         if (createdNodes.TryGetValue(nodeType, out GraphNode? existingNode))
         {
             return existingNode;
         }
         cycleTracker.Visit(nodeType);
-        if (!IsTypeOrSubclassOf(nodeType, expectedGraphNodeType))
+        if (!IsTypeOrSubclassOf<TNode, TExpectedType>())
         {
             cycleTracker.Unvisit(nodeType);
-            var externalNode = NodeWithNoDependencies(nodeType);
+            var externalNode = CreateNodeWithNoDependencies(nodeType);
             createdNodes.Add(nodeType, externalNode);
             return externalNode;
         }
-        var (_, dependentNodeTypes) = GetTypesFromFirstConstructor(nodeType);
+        var (_, dependentNodeTypes) = GetTypesFromFirstConstructor<TNode>();
         if (dependentNodeTypes is null)
         {
             cycleTracker.Unvisit(nodeType);
-            var nodeWithNoDeps = NodeWithNoDependencies(nodeType);
+            var nodeWithNoDeps = CreateNodeWithNoDependencies(nodeType);
             createdNodes.Add(nodeType, nodeWithNoDeps);
             return nodeWithNoDeps;
         }
@@ -130,8 +132,6 @@ public class GraphHelpers
             nodeWithDeps = new GraphNode()
             {
                 NodeType = nodeType,
-                Dependencies = new(),
-                Dependents = new(),
             };
             createdNodes.Add(nodeType, nodeWithDeps);
         }
@@ -145,19 +145,14 @@ public class GraphHelpers
         return nodeWithDeps;
     }
 
-    internal GraphNode NodeWithNoDependencies(Type node) => new() { NodeType = node };
-
-    /// <inheritdoc cref="GetTypesFromFirstConstructor(Type)"/>
-    public (ConstructorInfo?, List<Type>)? GetTypesFromFirstConstructor<T>()
-    {
-        return GetTypesFromFirstConstructor(typeof(T));
-    }
+    internal GraphNode CreateNodeWithNoDependencies(Type node) => new() { NodeType = node };
 
     /// <summary>
     /// TODO: Target certain constructors instead of the first constructor
     /// </summary>
-    public (ConstructorInfo?, List<Type>) GetTypesFromFirstConstructor(Type type)
+    public (ConstructorInfo?, List<Type>) GetTypesFromFirstConstructor<T>()
     {
+        var type = typeof(T);
         var graphNodes = new List<Type>();
         var ctorInfos = type.GetConstructors();
         if (ctorInfos is null || ctorInfos.Length == 0)
@@ -176,9 +171,11 @@ public class GraphHelpers
         return (ctorInfo, graphNodes);
     }
 
-    public bool IsTypeOrSubclassOf(Type type, Type comparisonType)
+    public bool IsTypeOrSubclassOf<T1, T2>()
     {
-        return type == comparisonType || type.IsSubclassOf(comparisonType);
+        var type1 = typeof(T1);
+        var type2 = typeof(T2);
+        return type1 == type2 || type2.IsSubclassOf(type2);
     }
 
     /// <summary>
@@ -186,16 +183,14 @@ public class GraphHelpers
     /// </summary>
     public bool IsNullable<T>(T obj)
     {
-        if (obj == null) return true; // obvious
+        if (obj is null) return true; // obvious
         return IsNullable<T>();
     }
 
     /// <inheritdoc cref="IsNullable{T}(T)" />
-    public bool IsNullable<T>() => IsNullable(typeof(T));
-
-    /// <inheritdoc cref="IsNullable{T}(T)" />
-    public bool IsNullable(Type type)
+    public bool IsNullable<T>()
     {
+        var type = typeof(T);
         if (!type.IsValueType) return true; // ref-type
         if (Nullable.GetUnderlyingType(type) != null) return true; // Nullable<T>
         return false; // value-type

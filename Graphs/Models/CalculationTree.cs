@@ -9,28 +9,28 @@ namespace Graphs.Models;
 // TODO: Add code generation to generate the expected external unnecessaryTypes that need to be provided to <see cref="Resolve"/> as a class or object
 /// <summary>A graph of nodes that exist to resolve the value of a graphNode with type T</summary>
 /// <typeparam name="T">The graphNode that the entire graph exists to resolve the value for</typeparam>
-public class CalculationTree<TEntryNode, TEntryNodeValue> : IGraph where TEntryNode : InfoNode<TEntryNodeValue>
+public class CalculationTree<TRootNode, TRootNodeValue> : ICalculationTree<TRootNode, TRootNodeValue> where TRootNode : IInfoNode<TRootNodeValue>
 {
-    static readonly Type AllowedNodeType = typeof(InfoNode);
+    static readonly Type AllowedNodeType = typeof(IInfoNode<object>);
     readonly GraphHelpers graphHelpers = new();
-    /// <summary>The graphNode structure necessary for sorting the graph and constructing the instances of <see cref="InfoNode"/>s</summary>
+    /// <summary>The graphNode structure necessary for sorting the graph and constructing the instances of <see cref="IInfoNode"/></summary>
     internal Dictionary<Type, GraphNode> GraphNodes { get; private set; } = [];
     /// <summary>Maps type to InfoNode possibly containing instance data</summary>
-    readonly Dictionary<Type, InfoNode> Nodes = [];
+    readonly Dictionary<Type, IInfoNode<object>> Nodes = [];
     readonly HashSet<Type> ExternalDependencies = [];
     readonly GraphNode RootNode;
 
     #region Public Methods
 
-    public TEntryNode Root => (TEntryNode)Nodes[RootNode.NodeType];
-    public TEntryNodeValue? Value => (TEntryNodeValue?)Nodes[RootNode.NodeType].ObjectValue;
+    public TRootNode Root => (TRootNode)Nodes[RootNode.NodeType];
+    public TRootNodeValue? Value => (TRootNodeValue?)Nodes[RootNode.NodeType].Value;
 
     /// <summary>
     /// Returns a graph with all nodes necessary to calculate the nodeType of type T
     /// </summary>
     public CalculationTree()
     {
-        RootNode = Add<TEntryNode>();
+        RootNode = Add<TRootNode>();
     }
 
     /// <summary>
@@ -47,7 +47,7 @@ public class CalculationTree<TEntryNode, TEntryNodeValue> : IGraph where TEntryN
     /// <exception cref="NullReferenceException"></exception>
     /// <exception cref="MissingExternalGraphDependencyException"></exception>
     /// <exception cref="InvalidTypeAddedToGraphException"></exception>
-    public TEntryNodeValue? Resolve(params object[] externalGraphDependencies)
+    public TRootNodeValue? Resolve(params object[] externalGraphDependencies)
     {
         var sortedGraphNodes = SetupNodeResolution(externalGraphDependencies);
         foreach (var graphNode in sortedGraphNodes)
@@ -61,13 +61,13 @@ public class CalculationTree<TEntryNode, TEntryNodeValue> : IGraph where TEntryN
             }
             var infoNode = Nodes[graphNode.NodeType];
             infoNode.Graph = this;
-            infoNode.ResolveObject();
+            infoNode.Resolve();
         }
         return Root.Value;
     }
 
     /// <inheritdoc cref="Resolve(object[])"/>
-    public async Task<TEntryNodeValue?> ResolveAsync(params object[] externalGraphDependencies)
+    public async Task<TRootNodeValue?> ResolveAsync(params object[] externalGraphDependencies)
     {
         var sortedGraphNodes = SetupNodeResolution(externalGraphDependencies);
         foreach (var graphNode in sortedGraphNodes)
@@ -79,24 +79,24 @@ public class CalculationTree<TEntryNode, TEntryNodeValue> : IGraph where TEntryN
             }
             var infoNode = Nodes[graphNode.NodeType];
             infoNode.Graph = this;
-            await infoNode.ResolveObjectAsync();
+            await infoNode.ResolveAsync();
         }
         return Root.Value;
     }
 
     /// <summary>
-    /// Fetches an <see cref="InfoNode"/> of type <typeparamref name="TNode"/> from the graph. Will throw if <see cref="Resolve(object[])"/> has not been called
+    /// Fetches an <see cref="IInfoNode{K}"/> of type <typeparamref name="TNode"/> from the graph. Will throw if <see cref="Resolve(object[])"/> has not been called
     /// </summary>
     /// <typeparam name="TNode">The type of node to fetch in the graph</typeparam>
     /// <returns>The node instance found in the graph</returns>
-    /// <exception cref="NodeOutsideOfGraphException{T, K}"></exception>
-    public T Get<T>() where T : InfoNode
+    /// <exception cref="NodeOutsideOfGraphException{TGraph, TNode}"></exception>
+    public TNode Get<TNode, TNodeValue>() where TNode : IInfoNode<TNodeValue>
     {
-        if (Nodes.ContainsKey(typeof(T)))
+        if (Nodes.ContainsKey(typeof(TNode)))
         {
-            return (T)Nodes[typeof(T)];
+            return (TNode)Nodes[typeof(TNode)];
         }
-        throw new NodeOutsideOfGraphException<CalculationTree<TEntryNode, TEntryNodeValue>, T>(this);
+        throw new NodeOutsideOfGraphException<CalculationTree<TRootNode, TRootNodeValue>, TNode>(this);
     }
 
     /// <summary>
@@ -104,14 +104,14 @@ public class CalculationTree<TEntryNode, TEntryNodeValue> : IGraph where TEntryN
     /// This will always fail if called before the graph is resolved
     /// </summary>
     /// <returns>An instance of type <typeparamref name="T"/></returns>
-    /// <exception cref="NodeOutsideOfGraphException{CalculationTree{TEntryNode, TEntryNodeValue}, T}"></exception>
+    /// <exception cref="NodeOutsideOfGraphException{CalculationTree{TRootNode, TRootNodeValue}, T}"></exception>
     public T GetExternalDependency<T>()
     {
         if (Nodes.ContainsKey(typeof(T)))
         {
             return (T)Nodes[typeof(T)].ObjectValue;
         }
-        throw new NodeOutsideOfGraphException<CalculationTree<TEntryNode, TEntryNodeValue>, T>(this);
+        throw new NodeOutsideOfGraphException<CalculationTree<TRootNode, TRootNodeValue>, T>(this);
     }
 
     /// <summary>
@@ -180,9 +180,9 @@ public class CalculationTree<TEntryNode, TEntryNodeValue> : IGraph where TEntryN
     /// <summary>
     /// Adds a nodeType to the graph and all its dependencies. Also performs a sort on the nodes by their in-degree
     /// </summary>
-    GraphNode Add<T>() where T : InfoNode
+    GraphNode Add<TNode, TNodeValue>() where TNode : IInfoNode<TNodeValue>
     {
-        var node = graphHelpers.GetGraphNodes<T>(AllowedNodeType);
+        var node = graphHelpers.GetGraphNodes<TNode>(AllowedNodeType);
         var flattenedNodes = graphHelpers.FlattenNodes(node);
         foreach (var node_ in flattenedNodes)
         {
@@ -214,10 +214,10 @@ public class CalculationTree<TEntryNode, TEntryNodeValue> : IGraph where TEntryN
         return nodeInstance;
     }
 
-    InfoNode CreateExternalInfoNode(object Value)
+    ExternalInfoNode<T> CreateExternalInfoNode<T>(T Value)
     {
-        var infoNode = new ExternalInfoNode();
-        infoNode.ObjectValue = Value;
+        var infoNode = new ExternalInfoNode<T>();
+        infoNode.Value = Value;
         return infoNode;
     }
 
@@ -286,7 +286,7 @@ public class CalculationTree<TEntryNode, TEntryNodeValue> : IGraph where TEntryN
         if (externalGraphNodeTypes.Count > 0)
         {
             var missingGraphNodes = externalGraphNodes.Where(graphNode => externalGraphNodeTypes.Contains(graphNode.NodeType));
-            throw new MissingExternalGraphDependencyException<TEntryNode>(missingGraphNodes);
+            throw new MissingExternalGraphDependencyException<TRootNode>(missingGraphNodes);
         }
 
         void AssignType(HashSet<Type> typeHash, object dependency, Type? type = null)

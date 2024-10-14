@@ -1,4 +1,5 @@
-﻿using Graphs.Models;
+﻿using Graphs.Interfaces;
+using Graphs.Models;
 
 namespace Graphs.Services;
 
@@ -12,7 +13,8 @@ public class KahnSorter
     /// <see href="https://www.geeksforgeeks.org/topological-sorting-indegree-based-solution"/> 
     /// </summary>
     /// <inheritdoc cref="KahnSort(IEnumerable{Type})"/>
-    internal IEnumerable<GraphNode> KahnSort<T, K>(CalculationTree<T, K> graph) where T : InfoNode<K> => KahnSort(graph.GraphNodes.Values.ToList());
+    internal IEnumerable<GraphNode> KahnSort<T, K>(CalculationTree<T, K> graph) where T : IInfoNode<K> 
+        => KahnSort(graph.GraphNodes.Values.ToList());
 
     /// <summary>
     /// Sorts the nodes in-place in order of their in-degree

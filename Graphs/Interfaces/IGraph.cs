@@ -1,12 +1,9 @@
-﻿using Graphs.Models;
+﻿namespace Graphs.Interfaces;
 
-namespace Graphs.Interfaces;
-
-public interface IGraph
+public interface IGraph<TNode>
 {
-    T Get<T>() where T : InfoNode;
-    IEnumerable<string> GetErrors();
-    IEnumerable<Type> GetNodes();
+    TNode Get();
+    IEnumerable<TNode> GetNodes();
     T GetExternalDependency<T>();
-    IEnumerable<Type> GetUnnecessaryExternalDependencies();
+    IEnumerable<object> GetUnnecessaryExternalDependencies();
 }

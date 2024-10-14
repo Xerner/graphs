@@ -1,8 +1,9 @@
-﻿using Graphs.Models;
+﻿using Graphs.Interfaces;
 
 namespace Graphs.Exceptions;
 
-public class NodeHasNotResolvedException : Exception
+public class NodeHasNotResolvedException<TNodeValue> : Exception
 {
-    public NodeHasNotResolvedException(InfoNode node) : base($"Cannot access value of '{node.GetType().FullName}' until Calculate() is called") { }
+    public NodeHasNotResolvedException(IInfoNode<TNodeValue> node) 
+        : base($"Cannot access value of '{node.GetType().FullName}' until Calculate() is called") { }
 }
