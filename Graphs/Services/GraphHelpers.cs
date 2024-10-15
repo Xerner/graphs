@@ -1,5 +1,7 @@
 ﻿using System.Reflection;
+using System.Xml.Linq;
 using Graphs.Exceptions;
+using Graphs.Interfaces;
 using Graphs.Models;
 
 namespace Graphs.Services;
@@ -28,10 +30,7 @@ public class GraphHelpers
     /// <exception cref="CycleInGraphException"></exception>
     bool DetectCycleFromNode(Type nodeType, GraphCycleTracker<Type>? cycleTracker = null)
     {
-        if (cycleTracker is null)
-        {
-            cycleTracker = new();
-        }
+        cycleTracker ??= new();
         cycleTracker.Visit(nodeType);
         var (_, dependencies) = GetTypesFromFirstConstructor(nodeType);
         if (dependencies is null || dependencies.Count == 0)
@@ -72,58 +71,42 @@ public class GraphHelpers
         return flatNodes;
     }
 
-    /// <inheritdoc cref="GetGraphNodes(Type, Type, GraphCycleTracker{Type}, Dictionary{Type, GraphNode}?)"/>
-    internal GraphNode GetGraphNodes<TExpectedInfoNodeType, TOriginNodeType>() where TExpectedInfoNodeType : IInfoNode where TOriginNodeType : TExpectedInfoNodeType
+    internal GraphNode GetGraphNodes<TNode, TExpectedType>(GraphCycleTracker<Type>? cycleTracker = null, Dictionary<Type, GraphNode>? createdNodes = null)
     {
-        return GetGraphNodes(typeof(TExpectedInfoNodeType), typeof(TOriginNodeType), new());
-    }
-
-    /// <inheritdoc cref="GetGraphNodes(Type, Type, GraphCycleTracker{Type}, Dictionary{Type, GraphNode}?)"/>
-    internal GraphNode GetGraphNodes<TOriginNodeType>(Type expectedInfoNodeType) where TOriginNodeType : IInfoNode
-    {
-        return GetGraphNodes(expectedInfoNodeType, typeof(TOriginNodeType), new());
-    }
-
-    /// <inheritdoc cref="GetGraphNodes(Type, Type, GraphCycleTracker{Type}, Dictionary{Type, GraphNode}?)"/>
-    internal GraphNode GetGraphNodes(Type expectedInfoNodeType, Type graphType)
-    {
-        return GetGraphNodes(expectedInfoNodeType, graphType, new());
+        return GetGraphNodes(typeof(TNode), typeof(TExpectedType), cycleTracker, createdNodes);
     }
 
     /// <summary>
     /// Turns <paramref name="nodeType"/> into a <see cref="GraphNode"/> and then does the same for all of its 
     /// constructors parameters recursively. The constructor parameters are what are considered 
-    /// dependencies for nodeType. Constructor parameters that don't inherit from expectedGraphNodeType
-    /// are assumed to be "external dependencies" that are not created inside the graph
+    /// dependencies for <paramref name="nodeType"/>. Constructor parameters that don't inherit from <paramref name="expectedType"/>
+    /// are assumed to be invariants that are not created inside the graph
     /// </summary>
-    /// <param name="expectedGraphNodeType">Parameters of this type are assumed to be generated inside the graph. Anything that is not this type, or does not inherit from it is considered an external dependency</param>
+    /// <param name="expectedType">Parameters of this type are assumed to be generated inside the graph. Anything that is not this type, or does not inherit from it is considered an invariant</param>
     /// <param name="nodeType">The type to turn into a <see cref="GraphNode"/></param>
-    /// <returns>The graphs origin nodeWithNoDeps</returns>
+    /// <returns>The graphs root <see cref="GraphNode"/></returns>
     /// <exception cref="CycleInGraphException"></exception>
-    private GraphNode GetGraphNodes<TNode, TExpectedType>(GraphCycleTracker<Type> cycleTracker, Dictionary<Type, GraphNode>? createdNodes = null)
+    internal GraphNode GetGraphNodes(Type nodeType, Type expectedType, GraphCycleTracker<Type>? cycleTracker = null, Dictionary<Type, GraphNode>? createdNodes = null)
     {
-        if (createdNodes is null)
-        {
-            createdNodes = new();
-        }
-        var nodeType = typeof(TNode);
+        cycleTracker ??= new();
+        createdNodes ??= [];
         if (createdNodes.TryGetValue(nodeType, out GraphNode? existingNode))
         {
             return existingNode;
         }
         cycleTracker.Visit(nodeType);
-        if (!IsTypeOrSubclassOf<TNode, TExpectedType>())
+        if (!IsTypeOrSubclassOf(nodeType, expectedType))
         {
             cycleTracker.Unvisit(nodeType);
-            var externalNode = CreateNodeWithNoDependencies(nodeType);
-            createdNodes.Add(nodeType, externalNode);
-            return externalNode;
+            var invariantNode = CreateInvariant(nodeType);
+            createdNodes.Add(nodeType, invariantNode);
+            return invariantNode;
         }
-        var (_, dependentNodeTypes) = GetTypesFromFirstConstructor<TNode>();
+        var (_, dependentNodeTypes) = GetTypesFromFirstConstructor(nodeType);
         if (dependentNodeTypes is null)
         {
             cycleTracker.Unvisit(nodeType);
-            var nodeWithNoDeps = CreateNodeWithNoDependencies(nodeType);
+            var nodeWithNoDeps = CreateInvariant(nodeType);
             createdNodes.Add(nodeType, nodeWithNoDeps);
             return nodeWithNoDeps;
         }
@@ -137,7 +120,7 @@ public class GraphHelpers
         }
         foreach (var dependentNodeType in dependentNodeTypes)
         {
-            var dependentNode = GetGraphNodes(expectedGraphNodeType, dependentNodeType, cycleTracker, createdNodes);
+            var dependentNode = GetGraphNodes(nodeType, expectedType, cycleTracker, createdNodes);
             dependentNode.Dependents.Add(nodeWithDeps);
             nodeWithDeps.Dependencies.Add(dependentNode);
         }
@@ -145,14 +128,18 @@ public class GraphHelpers
         return nodeWithDeps;
     }
 
-    internal GraphNode CreateNodeWithNoDependencies(Type node) => new() { NodeType = node };
+    internal GraphNode CreateInvariant(Type node) => new() { NodeType = node };
+
+    public (ConstructorInfo?, List<Type>) GetTypesFromFirstConstructor<T>()
+    {
+        return GetTypesFromFirstConstructor(typeof(T));
+    }
 
     /// <summary>
     /// TODO: Target certain constructors instead of the first constructor
     /// </summary>
-    public (ConstructorInfo?, List<Type>) GetTypesFromFirstConstructor<T>()
+    public (ConstructorInfo?, List<Type>) GetTypesFromFirstConstructor(Type type)
     {
-        var type = typeof(T);
         var graphNodes = new List<Type>();
         var ctorInfos = type.GetConstructors();
         if (ctorInfos is null || ctorInfos.Length == 0)
@@ -173,8 +160,12 @@ public class GraphHelpers
 
     public bool IsTypeOrSubclassOf<T1, T2>()
     {
-        var type1 = typeof(T1);
-        var type2 = typeof(T2);
+        return IsTypeOrSubclassOf(typeof(T1), typeof(T2));
+    }
+
+
+    public bool IsTypeOrSubclassOf(Type type1, Type type2)
+    {
         return type1 == type2 || type2.IsSubclassOf(type2);
     }
 

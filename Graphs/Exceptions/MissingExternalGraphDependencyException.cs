@@ -4,7 +4,7 @@ using Graphs.Models;
 
 namespace Graphs.Exceptions;
 
-internal class MissingExternalGraphDependencyException<TNode, TNodeValue> : Exception where TNode : IInfoNode<TNodeValue>
+internal class MissingExternalGraphDependencyException<TNode, TNodeValue> : Exception where TNode : ICalculationNode<TNodeValue>
 {
     public IEnumerable<GraphNode> MissingTypes;
 
@@ -48,6 +48,6 @@ internal class MissingExternalGraphDependencyException<TNode, TNodeValue> : Exce
             }
             strBuilder.AppendLine();
         }
-        return $"The graph for '{entryNodeType.FullName}' is missing the following external dependencies\n\n{strBuilder}\n";
+        return $"The graph for '{entryNodeType.FullName}' is missing the following invariants\n\n{strBuilder}\n";
     }
 }

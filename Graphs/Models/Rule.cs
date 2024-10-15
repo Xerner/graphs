@@ -1,15 +1,15 @@
 ﻿namespace Graphs.Models;
 
-/// <inheritdoc cref="InfoNode{T}"/>
+/// <inheritdoc cref="CalculationNode{T}"/>
 public abstract class Rule : Formula<bool>
 {
     new public static T Resolve<T>(params object[] dependencies) where T : Rule
     {
-        return InfoNode<bool>.Resolve<T>(dependencies);
+        return CalculationNode<bool>.Calculate<T>(dependencies);
     }
 }
 
-/// <inheritdoc cref="InfoNode{T}"/>
+/// <inheritdoc cref="CalculationNode{T}"/>
 public abstract class RuleAsync : FormulaAsync<bool>
 {
     new public static async Task<T> Resolve<T>(params object[] dependencies) where T : RuleAsync

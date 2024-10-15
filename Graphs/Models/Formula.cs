@@ -1,11 +1,11 @@
 ﻿namespace Graphs.Models;
 
-/// <inheritdoc cref="InfoNode{T}"/>
-public abstract class Formula<T> : InfoNode<T>
+/// <inheritdoc cref="CalculationNode{T}"/>
+public abstract class Formula<T> : CalculationNode<T>
 {
 }
 
-/// <inheritdoc cref="InfoNode{T}"/>
+/// <inheritdoc cref="CalculationNode{T}"/>
 public abstract class FormulaAsync<T> : InfoNodeAsync<T>
 {
 }

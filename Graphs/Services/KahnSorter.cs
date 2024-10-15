@@ -13,7 +13,7 @@ public class KahnSorter
     /// <see href="https://www.geeksforgeeks.org/topological-sorting-indegree-based-solution"/> 
     /// </summary>
     /// <inheritdoc cref="KahnSort(IEnumerable{Type})"/>
-    internal IEnumerable<GraphNode> KahnSort<T, K>(CalculationTree<T, K> graph) where T : IInfoNode<K> 
+    internal IEnumerable<GraphNode> KahnSort<TNode>(CalculationTree<TNode> graph) where TNode : ICalculationNode
         => KahnSort(graph.GraphNodes.Values.ToList());
 
     /// <summary>
