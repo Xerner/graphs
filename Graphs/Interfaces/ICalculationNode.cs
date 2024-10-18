@@ -11,6 +11,11 @@ public interface ICalculationNode
     object? Value { get; }
 
     /// <summary>
+    /// The graph that the node is a part of
+    /// </summary>
+    IGraph<ICalculationNode>? Graph { get; set; }
+
+    /// <summary>
     /// Calculates the nodes value and sets it to <see cref="Value"/>
     /// </summary>
     /// <returns>The nodes value</returns>
@@ -28,6 +33,11 @@ public interface ICalculationNode
     /// Retrieves errors encountered when trying to calculate the node. This can also return errors found in the nodes dependencies
     /// </summary>
     IReadOnlySet<object> GetErrors();
+
+    /// <summary>
+    /// Resets the errors that have been encountered when trying to calculate the node
+    /// </summary>
+    void ResetErrors();
 }
 
 /// <inheritdoc cref="ICalculationNode"/>

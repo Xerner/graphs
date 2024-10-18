@@ -5,7 +5,7 @@ namespace Graphs.Services;
 
 public class KahnSorter
 {
-    readonly GraphHelpers graphHelpers = new();
+    readonly GraphService graphHelpers = new();
 
     /// <summary>
     /// Returns a sorted list of the graphs nodes

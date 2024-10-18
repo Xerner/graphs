@@ -20,7 +20,7 @@ public class CalculationNode : ICalculationNode
     /// <summary>
     /// The graph that this node is a part of
     /// </summary>
-    public IGraph<ICalculationNode>? Graph { get; internal set; } = default;
+    public IGraph<ICalculationNode>? Graph { get; set; } = default;
 
     /// <inheritdoc cref="ICalculationNode.Value"/>
     public virtual object? Value { get; protected set; }

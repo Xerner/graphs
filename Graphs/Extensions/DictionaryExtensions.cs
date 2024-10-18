@@ -2,7 +2,8 @@
 
 public static class DictionaryExtensions
 {
-    public static bool TryGetValueWithGenerics<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, out TValue? value) where TKey : notnull
+    public static bool TryGetValueWithGenerics<TKey, TValue>(this Dictionary<TKey, TValue> dict, TKey key, out TValue? value) 
+        where TKey : notnull
     {
         if (dict.TryGetValue(key, out value))
         {

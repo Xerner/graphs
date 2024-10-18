@@ -2,36 +2,25 @@
 
 namespace Graphs.Models;
 
-/// <summary>
-/// A <see cref="CalculationNode"/> that holds a constant value. Does not perform any calculations.
-/// </summary>
-internal class InvariantNode : CalculationNode
+/// <inheritdoc cref="IInvariantNode"/>
+public class InvariantNode : CalculationNode, IInvariantNode
 {
-    /// <summary>
-    /// The constant value of the node
-    /// </summary>
+    /// <inheritdoc cref="IInvariantNode.Value"/>
     public override object? Value { get; protected set; }
-    /// <summary>
-    /// Always returns true
-    /// </summary>
+
+    /// <inheritdoc cref="IInvariantNode.HasCalculated"/>
     public override bool HasCalculated { get; protected set; } = true;
 
-    /// <summary>
-    /// Sets the value of the node
-    /// </summary>
+    /// <inheritdoc cref="IInvariantNode.SetValue"/>
     public void SetValue(object value) => Value = value;
 
-    /// <summary>
-    /// Simply returns <see cref="Value"/>
-    /// </summary>
+    /// <inheritdoc cref="IInvariantNode.Calculate"/>
     public override object? Calculate()
     {
         return Value;
     }
 
-    /// <summary>
-    /// Simply returns <see cref="Task{object?}"/> with the result of the Task being <see cref="Value"/>
-    /// </summary>
+    /// <inheritdoc cref="IInvariantNode.CalculateAsync"/>
     public override Task<object?> CalculateAsync()
     {
         return Task.FromResult(Value);
@@ -40,15 +29,20 @@ internal class InvariantNode : CalculationNode
 
 /// <inheritdoc cref="InvariantNode"/>
 /// <typeparam name="TNodeValue">The type of value that it is expected to hold</typeparam>
-internal class InvariantNode<TNodeValue> : InvariantNode, ICalculationNode<TNodeValue>
+public class InvariantNode<TNodeValue> : InvariantNode, IInvariantNode<TNodeValue>
 {
-    /// <inheritdoc cref="InvariantNode.HasCalculated"/>
+    /// <inheritdoc cref="IInvariantNode.HasCalculated"/>
     public override bool HasCalculated { get; protected set; } = true;
-    /// <inheritdoc cref="InvariantNode.Value"/>
+
+    /// <inheritdoc cref="IInvariantNode.Value"/>
     public new TNodeValue? Value { get => (TNodeValue?)base.Value; set => base.Value = value; }
+
+    /// <inheritdoc cref="IInvariantNode.SetValue"/>
     public void SetValue(TNodeValue value) => Value = value;
-    /// <inheritdoc cref="InvariantNode.Calculate"/>
+
+    /// <inheritdoc cref="IInvariantNode.Calculate"/>
     public new virtual TNodeValue? Calculate() => Calculate();
-    /// <inheritdoc cref="InvariantNode.CalculateAsync"/>
+
+    /// <inheritdoc cref="IInvariantNode.CalculateAsync"/>
     public new virtual Task<TNodeValue?> CalculateAsync() => CalculateAsync();
 }

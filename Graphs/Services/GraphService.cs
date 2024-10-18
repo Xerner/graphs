@@ -6,7 +6,7 @@ using Graphs.Models;
 
 namespace Graphs.Services;
 
-public class GraphHelpers
+public class GraphService
 {
     /// <inheritdoc cref="DetectCycleFromNode(Type, HashSet{Type}?)"/>
     public bool DetectCycleInDirectedGraph(IEnumerable<Type> nodeTypes)
@@ -128,7 +128,14 @@ public class GraphHelpers
         return nodeWithDeps;
     }
 
-    internal GraphNode CreateInvariant(Type node) => new() { NodeType = node };
+    internal GraphNode CreateInvariant(Type node)
+    {
+        return new()
+        {
+            NodeType = node,
+            IsInvariant = true
+        };
+    }
 
     public (ConstructorInfo?, List<Type>) GetTypesFromFirstConstructor<T>()
     {

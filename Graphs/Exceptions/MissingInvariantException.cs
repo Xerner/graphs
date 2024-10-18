@@ -4,33 +4,31 @@ using Graphs.Models;
 
 namespace Graphs.Exceptions;
 
-internal class MissingExternalGraphDependencyException<TNode, TNodeValue> : Exception where TNode : ICalculationNode<TNodeValue>
+internal class MissingInvariantException<TNode>(IEnumerable<GraphNode> nodes) 
+    : Exception(Format(nodes)) 
+    where TNode : IInvariantNode
 {
-    public IEnumerable<GraphNode> MissingTypes;
+    public IEnumerable<GraphNode> MissingTypes = nodes;
 
-    public MissingExternalGraphDependencyException(IEnumerable<GraphNode> missingTypes) : base(Format(missingTypes))
-    {
-        MissingTypes = missingTypes;
-    }
-
-    public static string Format(IEnumerable<GraphNode> missingTypes)
+    public static string Format(IEnumerable<GraphNode> nodes)
     {
         var entryNodeType = typeof(TNode);
-        var missingTypesDict = new Dictionary<Type, List<GraphNode>>();
-        foreach (var missingType in missingTypes)
+        var missingDepsDict = new Dictionary<GraphNode, List<GraphNode>>();
+        foreach (var node in nodes)
         {
-            foreach (var dependent in missingType.Dependents)
+            foreach (var dependentNode in node.Dependents)
             {
-                if (!missingTypesDict.TryGetValue(missingType.NodeType, out List<GraphNode>? dependents))
+                if (!missingDepsDict.TryGetValue(node, out List<GraphNode>? dependents))
                 {
-                    dependents = new();
-                    missingTypesDict.Add(missingType.NodeType, dependents);
+                    dependents = [];
+                    missingDepsDict.Add(node, dependents);
                 }
-                dependents.Add(dependent);
+                dependents.Add(dependentNode);
             }
         }
+
         var strBuilder = new StringBuilder();
-        foreach (var typeAndList in missingTypesDict)
+        foreach (var typeAndList in missingDepsDict)
         {
             var type = typeAndList.Key;
             strBuilder.Append(type);
