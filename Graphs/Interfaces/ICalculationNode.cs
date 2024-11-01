@@ -3,17 +3,12 @@
 /// <summary>
 /// A node intended for using in calculations in graphs. It is assumed that its constructor parameters are its dependencies.
 /// </summary>
-public interface ICalculationNode
+public interface ICalculationNode : INode
 {
     /// <summary>
     /// The calculated value of the node, or null if not yet calculated
     /// </summary>
     object? Value { get; }
-
-    /// <summary>
-    /// The graph that the node is a part of
-    /// </summary>
-    IGraph<ICalculationNode>? Graph { get; set; }
 
     /// <summary>
     /// Calculates the nodes value and sets it to <see cref="Value"/>

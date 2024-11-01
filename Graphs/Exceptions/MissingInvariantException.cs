@@ -37,12 +37,12 @@ internal class MissingInvariantException<TNode>(IEnumerable<GraphNode> nodes)
             foreach (var dependent in dependents)
             {
                 strBuilder.Append('\t');
-                if (dependent.NodeType is null)
+                if (dependent.Type is null)
                 {
                     strBuilder.AppendLine("null");
                     continue;
                 }
-                strBuilder.AppendLine(dependent.NodeType.FullName);
+                strBuilder.AppendLine(dependent.Type.FullName);
             }
             strBuilder.AppendLine();
         }

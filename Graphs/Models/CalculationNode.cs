@@ -1,15 +1,8 @@
-﻿using Graphs.Exceptions;
+﻿using Graphs.Extensions;
 using Graphs.Interfaces;
+using Graphs.Services;
 
 namespace Graphs.Models;
-
-/// <inheritdoc cref="CalculationNode"/>
-public class CalculationNode<TNodeValue> : CalculationNode, ICalculationNode<TNodeValue>
-{
-    public new virtual TNodeValue? Value { get; protected set; }
-    public new virtual TNodeValue? Calculate() => Calculate();
-    public new virtual async Task<TNodeValue?> CalculateAsync() => await CalculateAsync();
-}
 
 /// <summary>
 /// A graph node containing info intended for use with a <see cref="CalculationTree{T}"/>.
@@ -20,13 +13,42 @@ public class CalculationNode : ICalculationNode
     /// <summary>
     /// The graph that this node is a part of
     /// </summary>
-    public IGraph<ICalculationNode>? Graph { get; set; } = default;
+    public required IGraph<ICalculationNode> Graph { get; init; }
+    IGraph<INode> INode.Graph => (IGraph<INode>)Graph;
 
     /// <inheritdoc cref="ICalculationNode.Value"/>
     public virtual object? Value { get; protected set; }
 
     /// <inheritdoc cref="ICalculationNode.HasCalculated"/>
     public virtual bool HasCalculated { get; protected set; } = false;
+
+
+    /// <summary>
+    /// Returns nodes in the graph that match the types of the constructor parameters of this types first constructor
+    /// </summary>
+    public IEnumerable<INode> GetDependencies()
+    {
+        var (_, dependencies) = GetType().GetTypesFromFirstConstructor();
+        return Graph.GetAll().Where(node => dependencies.Contains(node.GetType()));
+    }
+
+    public static IEnumerable<Type> GetDependenciesTypes(Type calculationNodeType)
+    {
+        var (_, dependencies) = calculationNodeType.GetTypesFromFirstConstructor();
+        return dependencies;
+    }
+
+    /// <summary>
+    /// Returns nodes in the graph that depend on this node
+    /// </summary>
+    public IEnumerable<INode> GetDependents()
+    {
+        return Graph.GetAll().Where(node => node.GetDependencies().Contains(this));
+    }
+
+    public int GetInDegree() => GetDependencies() is null ? 0 : GetDependencies().Count();
+
+    public bool IsInvariant() => GetInDegree() == 0;
 
     /// <inheritdoc cref="ICalculationNode.GetErrors"/>
     protected HashSet<string> Errors = [];
@@ -58,16 +80,23 @@ public class CalculationNode : ICalculationNode
     }
 
     /// <summary>
-    /// Helper function to quickly calculate a node of type <typeparamref name="TNode"/>
+    /// Helper function to quickly calculate a node of type <typeparamref name="TRootNode"/>
     /// </summary>
-    /// <typeparam name="TNode">The node to calculate</typeparam>
+    /// <typeparam name="TRootNode">The node to calculate</typeparam>
     /// <param name="dependencies">The nodes to calculates dependencies</param>
     /// <returns>The node with a resolved value, or errors</returns>
-    public static TNode Calculate<TNode>(params object[] dependencies) where TNode : CalculationNode
+    public static TRootNode Calculate<TRootNode>(params object[] dependencies) where TRootNode : CalculationNode
     {
-        var graph = new CalculationTree<TNode>();
-        graph.Calculate(dependencies);
-        return graph.Root;
+        var calcService = new CalculationTreeService();
+        var rootNode = calcService.Calculate<TRootNode>(dependencies);
+        return rootNode;
     }
 }
 
+/// <inheritdoc cref="CalculationNode"/>
+public class CalculationNode<TNodeValue> : CalculationNode, ICalculationNode<TNodeValue>
+{
+    public new virtual TNodeValue? Value { get; protected set; }
+    public new virtual TNodeValue? Calculate() => Calculate();
+    public new virtual async Task<TNodeValue?> CalculateAsync() => await CalculateAsync();
+}

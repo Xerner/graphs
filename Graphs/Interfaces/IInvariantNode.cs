@@ -18,11 +18,6 @@ public interface IInvariantNode : ICalculationNode
     new bool HasCalculated { get; }
 
     /// <summary>
-    /// Sets the value of the node
-    /// </summary>
-    void SetValue(object value);
-
-    /// <summary>
     /// Simply returns <see cref="Value"/>
     /// </summary>
     new object? Calculate();
@@ -31,6 +26,16 @@ public interface IInvariantNode : ICalculationNode
     /// Simply returns <see cref="Task{}"/> with the result of the Task being <see cref="Value"/>
     /// </summary>
     new Task<object?> CalculateAsync();
+
+    /// <summary>
+    /// Returns an empty list
+    /// </summary>
+    new IReadOnlySet<object> GetErrors();
+    
+    /// <summary>
+    /// Deos nothing
+    /// </summary>
+    new void ResetErrors();
 }
 
 /// <inheritdoc cref="InvariantNode"/>
